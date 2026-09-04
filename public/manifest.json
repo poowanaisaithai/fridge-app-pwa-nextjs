@@ -1,0 +1,25 @@
+{
+  "name": "FreshFridge - ตู้เย็นเตือนหมดอายุ",
+  "short_name": "FreshFridge",
+  "description": "Progressive Web App จัดการและแจ้งเตือนอาหารหมดอายุในตู้เย็น 7 วัน, 3 วัน และวันสุดท้าย พร้อมระบบสแกน Vision OCR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "food", "productivity", "utilities"]
+}

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="50%" stop-color="#065f46" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="doorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#6ee7b7" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Rounded Base -->
+  <rect width="192" height="192" rx="42" fill="url(#bgGrad)" />
+  <rect width="184" height="184" x="4" y="4" rx="38" fill="none" stroke="#34d399" stroke-width="2" stroke-opacity="0.3" />
+
+  <!-- Refrigerator Body -->
+  <g transform="translate(46, 26)">
+    <!-- Main Outer Fridge Shell -->
+    <rect x="0" y="0" width="100" height="140" rx="16" fill="#0f172a" stroke="url(#accentGrad)" stroke-width="3" filter="url(#glow)" />
+    
+    <!-- Top Door (Freezer) -->
+    <rect x="6" y="6" width="88" height="46" rx="10" fill="url(#doorGrad)" />
+    <rect x="14" y="24" width="6" height="16" rx="3" fill="#ffffff" fill-opacity="0.9" />
+
+    <!-- Divider -->
+    <line x1="6" y1="56" x2="94" y2="56" stroke="#047857" stroke-width="2" />
+
+    <!-- Bottom Door (Fridge) -->
+    <rect x="6" y="60" width="88" height="74" rx="10" fill="url(#doorGrad)" fill-opacity="0.9" />
+    <rect x="14" y="76" width="6" height="24" rx="3" fill="#ffffff" fill-opacity="0.9" />
+
+    <!-- Sparkle / Fresh Symbol -->
+    <path d="M 68 20 Q 72 26 78 28 Q 72 30 68 36 Q 64 30 58 28 Q 64 26 68 20 Z" fill="#fef08a" />
+    
+    <!-- Expiry Alert Badge (Clock/Bell) -->
+    <circle cx="76" cy="112" r="16" fill="#f43f5e" stroke="#ffffff" stroke-width="2.5" />
+    <!-- Clock Hands inside alert badge -->
+    <circle cx="76" cy="112" r="1.5" fill="#ffffff" />
+    <path d="M 76 102 L 76 112 L 82 112" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none" />
+  </g>
+</svg>
