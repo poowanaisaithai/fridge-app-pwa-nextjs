@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Bell, HelpCircle, Download, Sparkles } from 'lucide-react';
+import { isFirebaseConfigured } from '@/lib/firebase';
 
 interface NavbarProps {
   onOpenPushManager: () => void;
@@ -38,6 +39,17 @@ export function Navbar({
               <span className="hidden rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-semibold text-brand-300 border border-brand-500/20 sm:inline-block">
                 100% Free Tier
               </span>
+              {isFirebaseConfigured ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400 border border-emerald-500/20" title="เชื่อมต่อ Firebase Firestore เรียบร้อย">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                  Cloud Sync
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400 border border-amber-500/20" title="ยังไม่เชื่อมต่อ Firebase (บันทึกลง LocalStorage)">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+                  Local Mode
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400">เตือนหมดอายุ 7, 3, วันสุดท้าย + Vision OCR</p>
           </div>

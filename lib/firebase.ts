@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import {
+  initializeFirestore,
   getFirestore,
   collection,
   doc,
@@ -34,7 +35,8 @@ const firebaseConfig = {
 export const isFirebaseConfigured = Boolean(
   firebaseConfig.apiKey &&
   firebaseConfig.projectId &&
-  firebaseConfig.apiKey !== 'AIzaSyYourFirebaseApiKeyHere'
+  firebaseConfig.apiKey !== 'AIzaSyYourFirebaseApiKeyHere' &&
+  firebaseConfig.apiKey.length > 10
 );
 
 let app: FirebaseApp | null = null;
@@ -45,7 +47,14 @@ if (typeof window !== 'undefined' || isFirebaseConfigured) {
   try {
     if (isFirebaseConfigured) {
       app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-      db = getFirestore(app);
+      try {
+        db = initializeFirestore(app, {
+          ignoreUndefinedProperties: true,
+        });
+      } catch {
+        db = getFirestore(app);
+      }
+
       if (firebaseConfig.storageBucket) {
         try {
           storage = getStorage(app);
@@ -60,6 +69,19 @@ if (typeof window !== 'undefined' || isFirebaseConfigured) {
 }
 
 export { app, db, storage };
+
+/**
+ * Remove undefined fields before writing to Firestore
+ */
+export function cleanForFirestore<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
 
 const LOCAL_STORAGE_ITEMS_KEY = 'fresh_fridge_items_v1';
 const LOCAL_STORAGE_SUBS_KEY = 'fresh_fridge_subs_v1';
@@ -100,11 +122,15 @@ export async function saveFridgeItem(item: FridgeItem): Promise<void> {
   if (isFirebaseConfigured && db) {
     try {
       const docRef = doc(db, 'items', item.id);
-      await setDoc(docRef, item, { merge: true });
+      const cleaned = cleanForFirestore(item);
+      await setDoc(docRef, cleaned, { merge: true });
+      console.log('✅ [Firebase Firestore] บันทึกข้อมูลอาหารสำเร็จ:', item.name, item.id);
       return;
-    } catch (err) {
-      console.warn('Firebase save failed, falling back to local storage:', err);
+    } catch (err: any) {
+      console.error('❌ [Firebase Firestore] บันทึกข้อมูลล้มเหลว:', err?.message || err);
     }
+  } else {
+    console.warn('⚠️ [Firebase] ยังไม่ได้เชื่อมต่อ Firebase หรือ db เป็น null กำลังบันทึกลง LocalStorage แทน');
   }
 
   // LocalStorage fallback
@@ -226,15 +252,16 @@ export async function uploadItemImageToStorage(
 export async function savePushSubscriptionToDb(subData: PushSubscriptionData): Promise<void> {
   // Hash endpoint to generate unique doc ID
   const subId = btoa(subData.endpoint).slice(0, 48).replace(/[^a-zA-Z0-9]/g, '_');
-  const recordWithId = { ...subData, id: subId };
+  const recordWithId = cleanForFirestore({ ...subData, id: subId });
 
   if (isFirebaseConfigured && db) {
     try {
       const docRef = doc(db, 'subscriptions', subId);
       await setDoc(docRef, recordWithId, { merge: true });
+      console.log('✅ [Firebase Firestore] บันทึก Push Subscription สำเร็จ:', subId);
       return;
-    } catch (err) {
-      console.warn('Firebase subscription save failed:', err);
+    } catch (err: any) {
+      console.error('❌ [Firebase Firestore] บันทึก Push Subscription ล้มเหลว:', err?.message || err);
     }
   }
 
