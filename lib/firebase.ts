@@ -25,8 +25,8 @@ import {
   GoogleAuthProvider,
   Auth,
 } from 'firebase/auth';
-import { FridgeItem, PushSubscriptionData } from './types';
-import { INITIAL_SAMPLE_ITEMS } from './sample-data';
+import { FridgeItem, PushSubscriptionData, CategoryMeta } from './types';
+import { INITIAL_SAMPLE_ITEMS, CATEGORIES } from './sample-data';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -99,6 +99,112 @@ export function cleanForFirestore<T extends Record<string, any>>(obj: T): Record
 
 const LOCAL_STORAGE_ITEMS_KEY = 'fresh_fridge_items_v1';
 const LOCAL_STORAGE_SUBS_KEY = 'fresh_fridge_subs_v1';
+const LOCAL_STORAGE_CATEGORIES_KEY = 'fresh_fridge_categories_v1';
+
+// -----------------------------------------------------------------------------
+// CATEGORIES CRUD & AUTO-SEED OPERATIONS (Firestore Collection: categories)
+// -----------------------------------------------------------------------------
+
+export async function fetchCategories(): Promise<CategoryMeta[]> {
+  if (isFirebaseConfigured && db) {
+    try {
+      const catCol = collection(db, 'categories');
+      const snapshot = await getDocs(catCol);
+
+      if (snapshot.empty) {
+        console.log('🌱 [Firebase Firestore] ไม่พบหมวดหมู่ใน DB ทำการ Seed หมวดหมู่อัตโนมัติ...');
+        const firestore = db;
+        await Promise.all(
+          CATEGORIES.map((cat, index) => {
+            const docRef = doc(firestore, 'categories', cat.id);
+            return setDoc(
+              docRef,
+              cleanForFirestore({
+                ...cat,
+                order: index,
+                isCustom: false,
+                createdAt: new Date().toISOString(),
+              })
+            );
+          })
+        );
+        return CATEGORIES;
+      }
+
+      const list = snapshot.docs.map((d) => d.data() as CategoryMeta & { order?: number });
+      list.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+      return list;
+    } catch (err) {
+      console.warn('Falling back to default categories:', err);
+    }
+  }
+
+  // LocalStorage fallback
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem(LOCAL_STORAGE_CATEGORIES_KEY);
+    if (!raw) {
+      localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(CATEGORIES));
+      return CATEGORIES;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return CATEGORIES;
+    }
+  }
+  return CATEGORIES;
+}
+
+export async function saveCategory(category: CategoryMeta): Promise<void> {
+  const catWithMeta = {
+    ...category,
+    updatedAt: new Date().toISOString(),
+    createdAt: category.createdAt || new Date().toISOString(),
+  };
+
+  if (isFirebaseConfigured && db) {
+    try {
+      const docRef = doc(db, 'categories', category.id);
+      await setDoc(docRef, cleanForFirestore(catWithMeta), { merge: true });
+      console.log('✅ [Firebase Firestore] บันทึกหมวดหมู่สำเร็จ:', category.nameTh, category.id);
+      return;
+    } catch (err: any) {
+      console.error('❌ [Firebase Firestore] บันทึกหมวดหมู่ล้มเหลว:', err?.message || err);
+    }
+  }
+
+  // LocalStorage fallback
+  if (typeof window !== 'undefined') {
+    const current = await fetchCategories();
+    const index = current.findIndex((c) => c.id === category.id);
+    let updated: CategoryMeta[];
+    if (index >= 0) {
+      updated = current.map((c) => (c.id === category.id ? catWithMeta : c));
+    } else {
+      updated = [...current, catWithMeta];
+    }
+    localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
+  }
+}
+
+export async function removeCategory(categoryId: string): Promise<void> {
+  if (isFirebaseConfigured && db) {
+    try {
+      await deleteDoc(doc(db, 'categories', categoryId));
+      console.log('✅ [Firebase Firestore] ลบหมวดหมู่สำเร็จ:', categoryId);
+      return;
+    } catch (err: any) {
+      console.error('❌ [Firebase Firestore] ลบหมวดหมู่ล้มเหลว:', err?.message || err);
+    }
+  }
+
+  // LocalStorage fallback
+  if (typeof window !== 'undefined') {
+    const current = await fetchCategories();
+    const updated = current.filter((c) => c.id !== categoryId);
+    localStorage.setItem(LOCAL_STORAGE_CATEGORIES_KEY, JSON.stringify(updated));
+  }
+}
 
 // -----------------------------------------------------------------------------
 // ITEMS CRUD OPERATIONS

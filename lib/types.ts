@@ -1,6 +1,6 @@
 export type ExpiryStage = 'expired' | 'today' | 'urgent_3d' | 'warning_7d' | 'fresh';
 
-export type FoodCategory =
+export type DefaultFoodCategory =
   | 'dairy'
   | 'produce'
   | 'meat'
@@ -11,6 +11,8 @@ export type FoodCategory =
   | 'leftovers'
   | 'snacks'
   | 'other';
+
+export type FoodCategory = DefaultFoodCategory | (string & {});
 
 export type Compartment = 'fridge' | 'freezer' | 'pantry';
 
@@ -55,9 +57,12 @@ export interface OCRScanResult {
 export interface CategoryMeta {
   id: FoodCategory;
   nameTh: string;
-  nameEn: string;
+  nameEn?: string;
   emoji: string;
-  color: string;
+  color?: string;
+  isCustom?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CompartmentMeta {

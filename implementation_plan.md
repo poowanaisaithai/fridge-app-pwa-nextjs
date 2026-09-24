@@ -15,6 +15,7 @@
 - [x] **แก้ไข TypeScript Build Issue**: แก้ไข Type ของ `applicationServerKey` ใน [push-notifications.ts](file:///d:/PALM/dev/fridge-app/lib/push-notifications.ts) เพื่อให้คอมไพล์ผ่านฉลุย
 - [x] **Investigation, Approval & Conventional Commits Protocol**: บันทึกกฎการทำงาน: วิเคราะห์ Root Cause ให้ถี่ถ้วนก่อนเสมอ, เสนอแนวทางขออนุมัติก่อนลงมือแก้ และใช้ Conventional Commits โดยต้องขออนุมัติก่อน commit ทุกครั้ง ลงใน [AGENTS.md](file:///d:/PALM/dev/fridge-app/AGENTS.md)
 - [x] **Google Sign-In & Admin Back-Office Management**: เพิ่มระบบล็อกอินด้วย Google และแดชบอร์ดจัดการระบบหลังบ้าน (สิทธิ์ Admin/Member, จัดการอุปกรณ์ Push, ตรวจสอบและสั่งรัน Cron ได้ทันที)
+- [x] **Dynamic Food Categories in Firestore & Admin Category Management**: ย้ายหมวดหมู่อาหารลง Firestore (พร้อม Auto-seed 10 หมวดหมู่เริ่มต้นอัตโนมัติ) และเพิ่มระบบให้ Admin จัดการเพิ่ม/แก้ไข/ลบหมวดหมู่ใหม่ได้แบบเรียลไทม์ผ่านแท็บหมวดหมู่อาหารใน Admin Back-Office Modal
 
 ---
 

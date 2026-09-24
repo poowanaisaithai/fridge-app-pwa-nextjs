@@ -14,12 +14,13 @@ import {
   UtensilsCrossed,
   Filter,
 } from 'lucide-react';
-import { FridgeItem, Compartment, FoodCategory } from '@/lib/types';
+import { FridgeItem, Compartment, FoodCategory, CategoryMeta } from '@/lib/types';
 import {
   fetchFridgeItems,
   removeFridgeItem,
   markItemConsumed,
   isFirebaseConfigured,
+  fetchCategories,
 } from '@/lib/firebase';
 import { getDaysRemaining } from '@/lib/date-utils';
 import { CATEGORIES, COMPARTMENTS, INITIAL_SAMPLE_ITEMS } from '@/lib/sample-data';
@@ -36,6 +37,7 @@ import { AdminDashboardModal } from '@/components/AdminDashboardModal';
 
 export default function DashboardPage() {
   const [items, setItems] = useState<FridgeItem[]>([]);
+  const [categories, setCategories] = useState<CategoryMeta[]>(CATEGORIES);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filter & Search States
@@ -53,11 +55,23 @@ export default function DashboardPage() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isPushActive, setIsPushActive] = useState(false);
 
-  // Initialize and load items
+  // Initialize and load items & categories
   useEffect(() => {
     loadItems();
+    loadCategories();
     initServiceWorkerAndPush();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const cats = await fetchCategories();
+      if (cats && cats.length > 0) {
+        setCategories(cats);
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  };
 
   const initServiceWorkerAndPush = async () => {
     await registerServiceWorker();
@@ -398,7 +412,7 @@ export default function DashboardPage() {
           >
             ทุกหมวด
           </button>
-          {CATEGORIES.map((cat) => {
+          {categories.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             return (
               <button
@@ -429,6 +443,7 @@ export default function DashboardPage() {
               <ItemCard
                 key={item.id}
                 item={item}
+                categories={categories}
                 onEdit={handleEditItem}
                 onDelete={handleDeleteItem}
                 onToggleConsumed={handleToggleConsumed}
@@ -481,6 +496,7 @@ export default function DashboardPage() {
         onClose={() => setIsAddModalOpen(false)}
         onItemSaved={loadItems}
         editItem={editingItem}
+        categories={categories}
       />
 
       {/* Push Notification Manager Modal */}
@@ -501,6 +517,7 @@ export default function DashboardPage() {
         isOpen={isAdminModalOpen}
         onClose={() => setIsAdminModalOpen(false)}
         items={items}
+        onCategoriesChange={loadCategories}
       />
 
       {/* PWA Install Banner */}

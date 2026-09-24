@@ -15,7 +15,7 @@ import {
   AlertCircle,
   HelpCircle,
 } from 'lucide-react';
-import { FridgeItem, FoodCategory, Compartment } from '@/lib/types';
+import { FridgeItem, FoodCategory, Compartment, CategoryMeta } from '@/lib/types';
 import { CATEGORIES, COMPARTMENTS } from '@/lib/sample-data';
 import { compressImage, formatBytes, CompressionResult } from '@/lib/image-compression';
 import { recognizeImageOCR } from '@/lib/ocr-service';
@@ -27,6 +27,7 @@ interface AddItemModalProps {
   onClose: () => void;
   onItemSaved: () => void;
   editItem?: FridgeItem | null;
+  categories?: CategoryMeta[];
 }
 
 export function AddItemModal({
@@ -34,6 +35,7 @@ export function AddItemModal({
   onClose,
   onItemSaved,
   editItem,
+  categories = CATEGORIES,
 }: AddItemModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -412,7 +414,7 @@ export function AddItemModal({
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-300">หมวดหมู่</label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 max-h-36 overflow-y-auto pr-1">
-              {CATEGORIES.map((cat) => {
+              {categories.map((cat) => {
                 const isSelected = category === cat.id;
                 return (
                   <button

@@ -18,10 +18,13 @@ import {
   Sparkles,
   Server,
   Database,
+  Tags,
+  Plus,
+  Palette,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { UserProfile, PushSubscriptionData, FridgeItem } from '@/lib/types';
-import { db, cleanForFirestore } from '@/lib/firebase';
+import { UserProfile, PushSubscriptionData, FridgeItem, CategoryMeta } from '@/lib/types';
+import { db, cleanForFirestore, fetchCategories, saveCategory, removeCategory } from '@/lib/firebase';
 import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { sendTestPushNotification } from '@/lib/push-notifications';
 import { getDaysRemaining } from '@/lib/date-utils';
@@ -30,11 +33,17 @@ interface AdminDashboardModalProps {
   isOpen: boolean;
   onClose: () => void;
   items: FridgeItem[];
+  onCategoriesChange?: () => void;
 }
 
-type TabType = 'users' | 'devices' | 'cron' | 'system';
+type TabType = 'users' | 'devices' | 'categories' | 'cron' | 'system';
 
-export function AdminDashboardModal({ isOpen, onClose, items }: AdminDashboardModalProps) {
+export function AdminDashboardModal({
+  isOpen,
+  onClose,
+  items,
+  onCategoriesChange,
+}: AdminDashboardModalProps) {
   const { userProfile, isAdmin, fetchAllUsers, updateUserRole } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('users');
 
@@ -46,6 +55,16 @@ export function AdminDashboardModal({ isOpen, onClose, items }: AdminDashboardMo
   const [devicesList, setDevicesList] = useState<{ id: string; sub: PushSubscriptionData }[]>([]);
   const [isLoadingDevices, setIsLoadingDevices] = useState(false);
   const [testingDeviceId, setTestingDeviceId] = useState<string | null>(null);
+
+  // State for Categories tab
+  const [categoriesList, setCategoriesList] = useState<CategoryMeta[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCatNameTh, setNewCatNameTh] = useState('');
+  const [newCatNameEn, setNewCatNameEn] = useState('');
+  const [newCatEmoji, setNewCatEmoji] = useState('🥗');
+  const [newCatColor, setNewCatColor] = useState('#10b981');
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   // State for Cron tab
   const [isTriggeringCron, setIsTriggeringCron] = useState(false);
@@ -65,6 +84,67 @@ export function AdminDashboardModal({ isOpen, onClose, items }: AdminDashboardMo
       loadUsers();
     } else if (activeTab === 'devices') {
       loadDevices();
+    } else if (activeTab === 'categories') {
+      loadCategories();
+    }
+  };
+
+  const loadCategories = async () => {
+    setIsLoadingCategories(true);
+    try {
+      const data = await fetchCategories();
+      setCategoriesList(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatNameTh.trim()) {
+      setMessage({ text: 'กรุณาระบุชื่อหมวดหมู่ภาษาไทย', type: 'error' });
+      return;
+    }
+
+    setIsSavingCategory(true);
+    try {
+      const catId = `cat_${Date.now()}`;
+      const newCat: CategoryMeta = {
+        id: catId,
+        nameTh: newCatNameTh.trim(),
+        nameEn: newCatNameEn.trim() || undefined,
+        emoji: newCatEmoji.trim() || '🥗',
+        color: newCatColor || '#10b981',
+        isCustom: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      await saveCategory(newCat);
+      setMessage({ text: `เพิ่มหมวดหมู่ "${newCat.nameTh}" สำเร็จแล้ว!`, type: 'success' });
+      setNewCatNameTh('');
+      setNewCatNameEn('');
+      setIsAddingCategory(false);
+      await loadCategories();
+      if (onCategoriesChange) onCategoriesChange();
+    } catch (err: any) {
+      setMessage({ text: err?.message || 'เพิ่มหมวดหมู่ไม่สำเร็จ', type: 'error' });
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (cat: CategoryMeta) => {
+    if (!confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบหมวดหมู่ "${cat.nameTh}"?`)) return;
+
+    try {
+      await removeCategory(cat.id);
+      setMessage({ text: `ลบหมวดหมู่ "${cat.nameTh}" เรียบร้อยแล้ว`, type: 'success' });
+      await loadCategories();
+      if (onCategoriesChange) onCategoriesChange();
+    } catch (err: any) {
+      setMessage({ text: err?.message || 'ลบหมวดหมู่ไม่สำเร็จ', type: 'error' });
     }
   };
 
@@ -230,6 +310,17 @@ export function AdminDashboardModal({ isOpen, onClose, items }: AdminDashboardMo
           >
             <Smartphone className="h-4 w-4" />
             อุปกรณ์รับแจ้งเตือน ({devicesList.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`flex items-center gap-2 border-b-2 py-3 px-3 text-xs sm:text-sm font-medium transition ${
+              activeTab === 'categories'
+                ? 'border-brand-400 text-brand-300'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Tags className="h-4 w-4" />
+            หมวดหมู่อาหาร ({categoriesList.length})
           </button>
           <button
             onClick={() => setActiveTab('cron')}
@@ -431,6 +522,213 @@ export function AdminDashboardModal({ isOpen, onClose, items }: AdminDashboardMo
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: CATEGORIES */}
+          {activeTab === 'categories' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-400">
+                    หมวดหมู่จัดเก็บใน Firestore (Collection: categories) เพื่อแชร์ให้ทุกคนในบ้าน
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={loadCategories}
+                    className="flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs text-slate-300 hover:bg-slate-700 transition"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isLoadingCategories ? 'animate-spin' : ''}`} />
+                    รีเฟรช
+                  </button>
+                  <button
+                    onClick={() => setIsAddingCategory(!isAddingCategory)}
+                    className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-brand-500 to-emerald-500 px-3 py-1.5 text-xs font-bold text-slate-950 shadow-glow-emerald hover:brightness-110 transition"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {isAddingCategory ? 'ยกเลิก' : '+ เพิ่มหมวดหมู่'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Add Category Form */}
+              {isAddingCategory && (
+                <form
+                  onSubmit={handleCreateCategory}
+                  className="rounded-2xl border border-brand-500/30 bg-slate-950/80 p-4 space-y-3 animate-in fade-in zoom-in-95 duration-150"
+                >
+                  <div className="flex items-center gap-2 text-xs font-bold text-brand-300">
+                    <Plus className="h-4 w-4" />
+                    <span>สร้างหมวดหมู่อาหารใหม่</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                        ชื่อหมวดหมู่ (ภาษาไทย) *
+                      </label>
+                      <input
+                        type="text"
+                        value={newCatNameTh}
+                        onChange={(e) => setNewCatNameTh(e.target.value)}
+                        placeholder="เช่น อาหารคลีน, ของหวาน, อาหารแช่แข็ง"
+                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                        ชื่อหมวดหมู่ (ภาษาอังกฤษ - ไม่บังคับ)
+                      </label>
+                      <input
+                        type="text"
+                        value={newCatNameEn}
+                        onChange={(e) => setNewCatNameEn(e.target.value)}
+                        placeholder="e.g. Healthy & Clean, Sweets"
+                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                        ไอคอน Emoji
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newCatEmoji}
+                          onChange={(e) => setNewCatEmoji(e.target.value)}
+                          maxLength={4}
+                          className="w-16 text-center text-lg rounded-xl border border-white/10 bg-slate-900 py-1.5 text-white focus:border-brand-500 focus:outline-none"
+                        />
+                        {/* Quick Emojis */}
+                        <div className="flex flex-wrap gap-1">
+                          {['🥗', '🥑', '🥩', '🧀', '🍱', '🍜', '🍰', '🧃', '🥫', '💊', '🍺', '🍫'].map((em) => (
+                            <button
+                              key={em}
+                              type="button"
+                              onClick={() => setNewCatEmoji(em)}
+                              className={`h-7 w-7 rounded-lg text-sm flex items-center justify-center transition ${
+                                newCatEmoji === em ? 'bg-brand-500/30 border border-brand-400' : 'bg-slate-900 hover:bg-slate-800'
+                              }`}
+                            >
+                              {em}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-300 mb-1">
+                        โทนสีประจำหมวด
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={newCatColor}
+                          onChange={(e) => setNewCatColor(e.target.value)}
+                          className="h-8 w-12 rounded-lg border border-white/10 bg-slate-900 cursor-pointer"
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {['#10b981', '#60a5fa', '#f87171', '#fbbf24', '#c084fc', '#f472b6', '#38bdf8', '#fb923c'].map((clr) => (
+                            <button
+                              key={clr}
+                              type="button"
+                              onClick={() => setNewCatColor(clr)}
+                              style={{ backgroundColor: clr }}
+                              className={`h-6 w-6 rounded-full transition ${
+                                newCatColor === clr ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCategory(false)}
+                      className="rounded-xl bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 transition"
+                    >
+                      ยกเลิก
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingCategory}
+                      className="flex items-center gap-1.5 rounded-xl bg-brand-500 px-4 py-1.5 text-xs font-bold text-slate-950 hover:bg-brand-400 transition disabled:opacity-50"
+                    >
+                      {isSavingCategory ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                      บันทึกหมวดหมู่
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Categories Grid List */}
+              {isLoadingCategories ? (
+                <div className="flex justify-center py-10 text-slate-400">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : categoriesList.length === 0 ? (
+                <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-8 text-center text-slate-400 text-xs">
+                  ไม่พบหมวดหมู่ กำลังดาวน์โหลดจากฐานข้อมูล...
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {categoriesList.map((cat) => (
+                    <div
+                      key={cat.id}
+                      className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/40 p-3 hover:bg-white/[0.02] transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="flex h-10 w-10 items-center justify-center rounded-xl text-xl shadow-sm"
+                          style={{
+                            backgroundColor: `${cat.color || '#94a3b8'}20`,
+                            border: `1px solid ${cat.color || '#94a3b8'}40`,
+                          }}
+                        >
+                          <span>{cat.emoji}</span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white">{cat.nameTh}</span>
+                            {cat.isCustom ? (
+                              <span className="rounded-full bg-brand-500/20 px-2 py-0.2 text-[9px] font-semibold text-brand-300 border border-brand-500/30">
+                                แอดมินสร้าง
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-slate-800 px-1.5 py-0.2 text-[9px] text-slate-400 border border-slate-700">
+                                ระบบตั้งต้น
+                              </span>
+                            )}
+                          </div>
+                          {cat.nameEn && (
+                            <p className="text-[11px] text-slate-400">{cat.nameEn}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {cat.isCustom && (
+                        <button
+                          onClick={() => handleDeleteCategory(cat)}
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition"
+                          title="ลบหมวดหมู่นี้"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

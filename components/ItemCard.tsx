@@ -3,7 +3,7 @@
 import React from 'react';
 import confetti from 'canvas-confetti';
 import { CheckCircle2, Edit3, Trash2, Calendar, MapPin, Tag, AlertCircle } from 'lucide-react';
-import { FridgeItem } from '@/lib/types';
+import { FridgeItem, CategoryMeta } from '@/lib/types';
 import { getExpiryStatusInfo, formatThaiDate } from '@/lib/date-utils';
 import { CATEGORIES, COMPARTMENTS } from '@/lib/sample-data';
 
@@ -12,6 +12,7 @@ interface ItemCardProps {
   onEdit: (item: FridgeItem) => void;
   onDelete: (itemId: string, imagePath?: string) => void;
   onToggleConsumed: (itemId: string, currentConsumed: boolean) => void;
+  categories?: CategoryMeta[];
 }
 
 export function ItemCard({
@@ -19,9 +20,19 @@ export function ItemCard({
   onEdit,
   onDelete,
   onToggleConsumed,
+  categories = CATEGORIES,
 }: ItemCardProps) {
   const statusInfo = getExpiryStatusInfo(item.expirationDate);
-  const category = CATEGORIES.find((c) => c.id === item.category) || CATEGORIES[CATEGORIES.length - 1];
+  const category =
+    categories.find((c) => c.id === item.category) ||
+    CATEGORIES.find((c) => c.id === item.category) ||
+    categories[categories.length - 1] || {
+      id: 'other',
+      nameTh: 'อื่นๆ',
+      nameEn: 'Other',
+      emoji: '🍽️',
+      color: 'from-slate-500 to-gray-600',
+    };
   const compartment = COMPARTMENTS.find((c) => c.id === item.compartment) || COMPARTMENTS[0];
 
   const handleConsumeClick = (e: React.MouseEvent) => {
