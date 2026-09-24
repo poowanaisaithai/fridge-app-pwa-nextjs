@@ -32,3 +32,16 @@ Build a Progressive Web App (PWA) for managing and notifying users about expirin
   - Provide the exact configuration for `vercel.json` (for Cron setup).
   - Provide clean, modular code with comments. Include a `.env.example` file showing required VAPID and Firebase variables.
   - Write clear instructions in Thai on how to set up the Firebase Web SDK (us-central1) and generate VAPID keys.
+
+## 6. Investigation, Approval & Conventional Commits Protocol
+- **Root Cause Analysis First:** เมื่อได้รับแจ้งปัญหาหรือคำขอตรวจสอบ/แก้ไข ให้ทำการวิเคราะห์เชิงลึกเพื่อระบุสาเหตุที่แท้จริง (Root Cause) อย่างรอบคอบ ห้ามเดาหรือแก้เฉพาะอาการผิวเผิน
+- **Propose Before Executing:** นำเสนอผลการวิเคราะห์ Root Cause และเสนอแนวทางการแก้ไข (พร้อมทางเลือก/ผลกระทบถ้ามี) ให้ผู้ใช้พิจารณาอนุมัติก่อนเสมอ **ห้ามลงมือแก้โค้ดจริงจนกว่าผู้ใช้จะให้ความเห็นชอบ**
+- **Git Commit Approval Required:** ห้ามรันคำสั่ง `git commit` หรือ `git push` โดยพลการ จะต้องสรุปรายการเปลี่ยนแปลงและข้อความ commit ให้ผู้ใช้ตรวจสอบอนุมัติก่อนทุกครั้ง
+- **Conventional Commits Standard:** ทุก Commit Message จะต้องเขียนตามรูปแบบ Conventional Commits อย่างเคร่งครัด:
+  - `feat:` สำหรับการเพิ่มฟีเจอร์หรือความสามารถใหม่
+  - `fix:` สำหรับการแก้ไขบักหรือข้อผิดพลาด
+  - `docs:` สำหรับการแก้ไขหรือเพิ่มเอกสาร/คู่มือ
+  - `refactor:` สำหรับการปรับโครงสร้างโค้ดโดยไม่เปลี่ยนฟังก์ชันการทำงาน
+  - `perf:` สำหรับการปรับปรุงประสิทธิภาพ
+  - `chore:` สำหรับงานเบ็ดเตล็ด การตั้งค่า หรือ dependencies
+  - รูปแบบ: `<type>(<optional scope>): <คำอธิบายสั้นกระชับ>`
