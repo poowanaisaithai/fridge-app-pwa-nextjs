@@ -46,7 +46,13 @@ if (typeof window !== 'undefined' || isFirebaseConfigured) {
     if (isFirebaseConfigured) {
       app = getApps().length ? getApp() : initializeApp(firebaseConfig);
       db = getFirestore(app);
-      storage = getStorage(app);
+      if (firebaseConfig.storageBucket) {
+        try {
+          storage = getStorage(app);
+        } catch (sErr) {
+          console.warn('Storage init skipped or unavailable:', sErr);
+        }
+      }
     }
   } catch (err) {
     console.warn('Firebase initialization note:', err);
@@ -119,7 +125,13 @@ export async function removeFridgeItem(itemId: string, imageStoragePath?: string
   if (isFirebaseConfigured && db) {
     try {
       await deleteDoc(doc(db, 'items', itemId));
-      if (imageStoragePath && storage) {
+      // Only delete from storage if it's an external bucket file (not inline Firestore or local demo)
+      if (
+        imageStoragePath &&
+        imageStoragePath !== 'inline_firestore' &&
+        !imageStoragePath.startsWith('local_') &&
+        storage
+      ) {
         const imgRef = ref(storage, imageStoragePath);
         deleteObject(imgRef).catch(() => {});
       }
@@ -165,33 +177,42 @@ export async function markItemConsumed(itemId: string, consumed: boolean = true)
 }
 
 // -----------------------------------------------------------------------------
-// CLOUD STORAGE IMAGE UPLOAD (Free Tier us-central1)
+// CLOUD STORAGE & INLINE FIRESTORE IMAGE UPLOAD (100% Free Tier - No Card Needed)
 // -----------------------------------------------------------------------------
 
 export async function uploadItemImageToStorage(
   compressedFile: File,
   itemId: string
 ): Promise<{ downloadUrl: string; storagePath: string }> {
-  if (isFirebaseConfigured && storage) {
-    const extension = compressedFile.name.split('.').pop() || 'webp';
-    const storagePath = `items/${itemId}_${Date.now()}.${extension}`;
-    const storageRef = ref(storage, storagePath);
+  // If Firebase Storage is initialized and configured, attempt bucket upload
+  if (isFirebaseConfigured && storage && firebaseConfig.storageBucket) {
+    try {
+      const extension = compressedFile.name.split('.').pop() || 'webp';
+      const storagePath = `items/${itemId}_${Date.now()}.${extension}`;
+      const storageRef = ref(storage, storagePath);
 
-    const uploadResult = await uploadBytes(storageRef, compressedFile, {
-      contentType: compressedFile.type || 'image/webp',
-    });
+      const uploadResult = await uploadBytes(storageRef, compressedFile, {
+        contentType: compressedFile.type || 'image/webp',
+      });
 
-    const downloadUrl = await getDownloadURL(uploadResult.ref);
-    return { downloadUrl, storagePath };
+      const downloadUrl = await getDownloadURL(uploadResult.ref);
+      return { downloadUrl, storagePath };
+    } catch (err) {
+      console.warn(
+        'Firebase Storage upload failed or requires Blaze plan. Seamlessly falling back to Firestore Inline WebP Storage:',
+        err
+      );
+    }
   }
 
-  // Demo mode: Return blob / data URL preview
+  // 100% Free Tier Fallback (Spark Plan / No Credit Card Needed):
+  // Convert compressed WebP image to Base64 Data URL and store directly inside Firestore item document
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = () => {
       resolve({
         downloadUrl: reader.result as string,
-        storagePath: `local_demo_${Date.now()}`,
+        storagePath: 'inline_firestore',
       });
     };
     reader.readAsDataURL(compressedFile);

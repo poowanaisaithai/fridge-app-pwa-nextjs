@@ -13,8 +13,8 @@ export interface CompressionResult {
  */
 export async function compressImage(
   file: File,
-  maxDimension: number = 1024,
-  quality: number = 0.75
+  maxDimension: number = 720,
+  quality: number = 0.70
 ): Promise<CompressionResult> {
   return new Promise((resolve, reject) => {
     const originalSize = file.size;
