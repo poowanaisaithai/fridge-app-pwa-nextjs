@@ -32,6 +32,7 @@ import { AddItemModal } from '@/components/AddItemModal';
 import { PushManager } from '@/components/PushManager';
 import { SetupGuideModal } from '@/components/SetupGuideModal';
 import { InstallPwaPrompt } from '@/components/InstallPwaPrompt';
+import { AdminDashboardModal } from '@/components/AdminDashboardModal';
 
 export default function DashboardPage() {
   const [items, setItems] = useState<FridgeItem[]>([]);
@@ -49,6 +50,7 @@ export default function DashboardPage() {
   const [editingItem, setEditingItem] = useState<FridgeItem | null>(null);
   const [isPushModalOpen, setIsPushModalOpen] = useState(false);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isPushActive, setIsPushActive] = useState(false);
 
   // Initialize and load items
@@ -198,6 +200,7 @@ export default function DashboardPage() {
       <Navbar
         onOpenPushManager={() => setIsPushModalOpen(true)}
         onOpenSetupGuide={() => setIsSetupModalOpen(true)}
+        onOpenAdminDashboard={() => setIsAdminModalOpen(true)}
         isPushActive={isPushActive}
       />
 
@@ -491,6 +494,13 @@ export default function DashboardPage() {
       <SetupGuideModal
         isOpen={isSetupModalOpen}
         onClose={() => setIsSetupModalOpen(false)}
+      />
+
+      {/* Admin Dashboard Back-Office Modal */}
+      <AdminDashboardModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        items={items}
       />
 
       {/* PWA Install Banner */}

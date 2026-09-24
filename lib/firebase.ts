@@ -20,6 +20,11 @@ import {
   deleteObject,
   FirebaseStorage,
 } from 'firebase/storage';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  Auth,
+} from 'firebase/auth';
 import { FridgeItem, PushSubscriptionData } from './types';
 import { INITIAL_SAMPLE_ITEMS } from './sample-data';
 
@@ -42,6 +47,9 @@ export const isFirebaseConfigured = Boolean(
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
+let auth: Auth | null = null;
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 if (typeof window !== 'undefined' || isFirebaseConfigured) {
   try {
@@ -53,6 +61,12 @@ if (typeof window !== 'undefined' || isFirebaseConfigured) {
         });
       } catch {
         db = getFirestore(app);
+      }
+
+      try {
+        auth = getAuth(app);
+      } catch (aErr) {
+        console.warn('Auth init skipped or unavailable:', aErr);
       }
 
       if (firebaseConfig.storageBucket) {
@@ -68,7 +82,7 @@ if (typeof window !== 'undefined' || isFirebaseConfigured) {
   }
 }
 
-export { app, db, storage };
+export { app, db, storage, auth, googleProvider };
 
 /**
  * Remove undefined fields before writing to Firestore

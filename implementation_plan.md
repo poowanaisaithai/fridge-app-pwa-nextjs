@@ -14,6 +14,7 @@
 - [x] **Zero-Card 100% Free Tier Image Architecture**: บีบอัดรูปภาพเป็น WebP คุณภาพสูงขนาดจิ๋ว (< 45KB) และจัดเก็บเป็น Base64 Data URL ลงใน Firestore โดยตรง ทำให้ไม่ต้องเปิด Cloud Storage และไม่ต้องผูกบัตรเครดิต (Spark Plan 100% Free Forever)
 - [x] **แก้ไข TypeScript Build Issue**: แก้ไข Type ของ `applicationServerKey` ใน [push-notifications.ts](file:///d:/PALM/dev/fridge-app/lib/push-notifications.ts) เพื่อให้คอมไพล์ผ่านฉลุย
 - [x] **Investigation, Approval & Conventional Commits Protocol**: บันทึกกฎการทำงาน: วิเคราะห์ Root Cause ให้ถี่ถ้วนก่อนเสมอ, เสนอแนวทางขออนุมัติก่อนลงมือแก้ และใช้ Conventional Commits โดยต้องขออนุมัติก่อน commit ทุกครั้ง ลงใน [AGENTS.md](file:///d:/PALM/dev/fridge-app/AGENTS.md)
+- [x] **Google Sign-In & Admin Back-Office Management**: เพิ่มระบบล็อกอินด้วย Google และแดชบอร์ดจัดการระบบหลังบ้าน (สิทธิ์ Admin/Member, จัดการอุปกรณ์ Push, ตรวจสอบและสั่งรัน Cron ได้ทันที)
 
 ---
 

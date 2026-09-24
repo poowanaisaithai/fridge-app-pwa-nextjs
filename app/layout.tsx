@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata: Metadata = {
   title: 'FreshFridge - ตู้เย็นเตือนหมดอายุ (7, 3, วันสุดท้าย) + Vision OCR',
@@ -33,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="th" className="dark">
       <body className="min-h-screen antialiased selection:bg-brand-500 selection:text-white">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
